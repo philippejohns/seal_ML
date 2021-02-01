@@ -1,0 +1,10 @@
+Linux Instructions to Build and Run
+
+To build the executable, run the following commands from seal_ML directory:
+
+mkdir build
+cd build
+cmake ..
+make
+
+The executable is now named seal_ML. It requires no command line arguments to run.
