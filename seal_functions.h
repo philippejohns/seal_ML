@@ -24,6 +24,9 @@ SEAL_encrypt_matrix(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<
 vector<Ciphertext> 
 SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights);
 
+Ciphertext
+SEAL_dot_product(Evaluator & evalr, GaloisKeys & gal_keys, Ciphertext & ct, Plaintext & pt);
+
 vector<Ciphertext> 
 SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys);
 

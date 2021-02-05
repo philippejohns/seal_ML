@@ -51,22 +51,28 @@ SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext
     vector<Ciphertext> result;
     
     for (auto & ct : matrix)
-    { 
-        Ciphertext result_entry;
-        evalr.multiply_plain(ct, weights, result_entry);
-
-        Ciphertext rotated;
-        
-        for (size_t i = NR_COLS / 2; i > 0; i /= 2)
-        {
-            evalr.rotate_vector(result_entry, i, gal_keys, rotated);
-            evalr.add_inplace(result_entry, rotated);
-        }
-
-        result.push_back(result_entry);
-    }
+        result.push_back(SEAL_dot_product(evalr, gal_keys, ct, weights));
 
     return result;
+}
+
+Ciphertext
+SEAL_dot_product(Evaluator & evalr, GaloisKeys & gal_keys, Ciphertext & ct, Plaintext & pt)
+{
+    Ciphertext result_entry;
+
+    //element-wise multiplication between ct and pt
+    evalr.multiply_plain(ct, pt, result_entry); 
+
+    //sums up elements of each vector batched in ct*pt
+    Ciphertext rotated;
+    for (size_t i = NR_COLS / 2; i > 0; i /= 2)
+    {
+        evalr.rotate_vector(result_entry, i, gal_keys, rotated);
+        evalr.add_inplace(result_entry, rotated);
+    }
+
+    return result_entry; 
 }
 
 vector<Ciphertext> 
