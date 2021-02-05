@@ -42,13 +42,12 @@ int main()
 	cout << "plaintext CPU time used: " << time_elapsed_ms << " ms" << endl;
 	cout << "plaintext accuracy (exact sigmoid): "<< accuracy << endl;
 
-	//Setting up encryption parameters
+	//Setting up encryption parameters, keys and objects
     EncryptionParameters parms(scheme_type::ckks);
     parms.set_poly_modulus_degree(NR_SLOTS * 2);	//poly_modulus_degree must be twice NR_SLOTS
     parms.set_coeff_modulus(CoeffModulus::Create(NR_SLOTS * 2, PRIMES));
     SEALContext context(parms);
-
-    //Setting up keys
+    
     KeyGenerator keygen(context);
     auto secret_key = keygen.secret_key();
     PublicKey public_key;
@@ -57,14 +56,13 @@ int main()
     keygen.create_galois_keys(gal_keys);
     RelinKeys relin_keys;
     keygen.create_relin_keys(relin_keys);
-
+    
     Evaluator evaluator(context);
     CKKSEncoder encoder(context);
     Encryptor encryptor(context, public_key);
     Decryptor decryptor(context, secret_key);
 
 	//Encoding weights in plaintext
-    size_t vector_size = weights.size();
     Plaintext plaintext_weights = SEAL_encode_weights(encoder, weights);
 
     //Encrypting matrix of data
@@ -87,45 +85,4 @@ int main()
 	cout << "SEAL accuracy (3rd degree polynomial approx.): "<< accuracy << endl;
 
 	return 0;
-}
-//end main******************************************************************
-
-//Implementations of (non-encrypted) logistic regression functions
-vector<double> matrix_multiply(vector<vector<double>> & data, vector<double> & weights)
-{
-	vector<double> result;
-
-	for (size_t i = 0; i < data.size(); i++)
-	{
-		double result_i = 0.0;
-		for (size_t j = 0; j < data[i].size(); j++)
-			result_i += data[i][j] * weights[j];
-		
-		result.push_back(result_i);
-	}
-
-	return result;
-}
-
-vector<double> sigmoid_function(vector<double> & result)
-{	
-	vector<double> sigmoid;
-
-	for (size_t i = 0; i < result.size(); i++)
-		sigmoid.push_back(1.0 / (1.0 + exp(-result[i])));
-
-	return sigmoid;
-}
-
-//Used to determine accuracy of both encrypted and non-encrypted algorithms
-double get_accuracy(vector<double> & sigmoid, vector<double> & y)
-{
-	const double YES = 1.0;
-	const double NO = 0.0;
-	size_t counter = 0;
-	for (size_t i = 0; i < sigmoid.size(); i++)
-		if ((sigmoid[i] >= THRESHOLD ? YES : NO) == y[i])
-			counter++;
-
-	return (double)((double) counter / (double) NR_ROWS);
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(SEALDEMO VERSION 1.0.0 LANGUAGES CXX CUDA)
-add_executable(seal_ML main.cpp seal_functions.cpp read_files.cpp)
+add_executable(seal_ML main.cpp seal_functions.cpp read_files.cpp verification.cpp)
 find_package(SEAL 3.6 REQUIRED)
 target_link_libraries(seal_ML SEAL::seal)
 set(CMAKE_CXX_FLAGS "-O3")
