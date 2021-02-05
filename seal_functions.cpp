@@ -1,7 +1,7 @@
 #include "seal_functions.h"
 
-Plaintext SEAL_encode_weights
-(CKKSEncoder & encoder, vector<double> & weights)
+Plaintext 
+SEAL_encode_weights(CKKSEncoder & encoder, vector<double> & weights)
 {
     vector<double> batched_weights;
 
@@ -16,8 +16,8 @@ Plaintext SEAL_encode_weights
     return pt_weights;
 }
 
-vector<Ciphertext> SEAL_encrypt_matrix
-(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<double>> & matrix)
+vector<Ciphertext> 
+SEAL_encrypt_matrix(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<double>> & matrix)
 {
     size_t rows_per_ciphertext = (NR_SLOTS / NR_COLS);
     vector<vector<double>> batched_matrix;
@@ -45,8 +45,8 @@ vector<Ciphertext> SEAL_encrypt_matrix
     return encrypted_matrix;
 }
 
-vector<Ciphertext> SEAL_matrix_multiply
-(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights)
+vector<Ciphertext> 
+SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights)
 {
     vector<Ciphertext> result;
     
@@ -69,8 +69,8 @@ vector<Ciphertext> SEAL_matrix_multiply
     return result;
 }
 
-vector<Ciphertext> SEAL_sigmoid
-(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys)
+vector<Ciphertext> 
+SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys)
 {
     vector<Ciphertext> result;
     Plaintext plain_coeff3, plain_coeff1, plain_scale_down;
@@ -78,16 +78,16 @@ vector<Ciphertext> SEAL_sigmoid
     encoder.encode(COEFF3, CT_SCALE, plain_coeff3);
     encoder.encode(COEFF_XSCALE, CT_SCALE, plain_scale_down);
     
-    for (auto & it : vec) //need better names...
+    for (auto & x : vec) //need better names...
     { 
         Ciphertext x_scaled, x_scaled_coeff3, x_scaled_coeff1, x3;
 
-        //it was not rescaled after a single multiplication in the matrix multiply
-        evalr.rescale_to_next_inplace(it);
-        evalr.mod_switch_to_inplace(plain_scale_down, it.parms_id());
+        //x was not rescaled after a single multiplication in the matrix multiply
+        evalr.rescale_to_next_inplace(x);
+        evalr.mod_switch_to_inplace(plain_scale_down, x.parms_id());
 
         //scaling down x (the actual number, not the ciphertext)
-        evalr.multiply_plain(it, plain_scale_down, x_scaled);
+        evalr.multiply_plain(x, plain_scale_down, x_scaled);
         evalr.rescale_to_next_inplace(x_scaled);
 
         //to calculated x^3, square x first
@@ -95,7 +95,7 @@ vector<Ciphertext> SEAL_sigmoid
         evalr.relinearize_inplace(x3, r_keys);
         evalr.rescale_to_next_inplace(x3);
 
-        //multiply x by coefficient before multiplying it with x^2
+        //multiply x by coefficient before multiplying x with x^2
         evalr.mod_switch_to_inplace(plain_coeff3, x_scaled.parms_id());
         evalr.multiply_plain(x_scaled, plain_coeff3, x_scaled_coeff3);
         evalr.rescale_to_next_inplace(x_scaled_coeff3);
@@ -123,8 +123,8 @@ vector<Ciphertext> SEAL_sigmoid
     return result;
 }
 
-vector<double> SEAL_decrypt_result
-(Decryptor & decryptor, CKKSEncoder & encoder, vector<Ciphertext> & encrypted_result)
+vector<double> 
+SEAL_decrypt_result(Decryptor & decryptor, CKKSEncoder & encoder, vector<Ciphertext> & encrypted_result)
 {
     vector<double> result;
     size_t nr_entries = NR_SLOTS / NR_COLS;
