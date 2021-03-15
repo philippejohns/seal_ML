@@ -142,9 +142,12 @@ SEAL_decrypt_result(Decryptor & decryptor, CKKSEncoder & encoder, vector<Ciphert
         decryptor.decrypt(ct, pt);
         encoder.decode(pt, batched_results);
         
-        if (&ct == &encrypted_result.back())                //this seems like it may be a bad idea 
-            nr_entries = NR_ROWS % (NR_SLOTS / NR_COLS);    //maybe switch back to iterators
-
+        if (&ct == &encrypted_result.back()) //this seems like it may be a bad idea 
+        {
+             nr_entries = NR_ROWS % (NR_SLOTS / NR_COLS);  //maybe switch back to iterators
+             if(nr_entries == 0)
+                nr_entries = (NR_SLOTS / NR_COLS); 
+        }  
         for (size_t i = 0; i < nr_entries; i++)
             result.push_back(batched_results[i*NR_COLS]);
     }
