@@ -1,4 +1,5 @@
 #include "main.h"
+#include <thread>
 
 const size_t NR_ROWS = 422; 			//Number of rows in matrix of data
 const size_t NR_COLS = 1024;			//Number of columns in matrix of data
@@ -70,11 +71,14 @@ int main()
 
     //Performing algorithm while encrypted with SEAL
     c_start = std::clock();	// start time
-    vector<Ciphertext> encrypted_result = SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights);
-    vector<Ciphertext> sigmoid_result = SEAL_sigmoid(evaluator, encoder, encrypted_result, relin_keys);
+    //vector<Ciphertext> encrypted_result = SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights);
+    //vector<Ciphertext> sigmoid_result = SEAL_sigmoid(evaluator, encoder, encrypted_result, relin_keys);
+    SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights);
+    SEAL_sigmoid(evaluator, encoder, encrypted_matrix, relin_keys);
     c_end = clock(); 		//end time
 
-    vector<double> sigmoid_decrypted = SEAL_decrypt_result(decryptor, encoder, sigmoid_result);
+    //vector<double> sigmoid_decrypted = SEAL_decrypt_result(decryptor, encoder, sigmoid_result);
+    vector<double> sigmoid_decrypted = SEAL_decrypt_result(decryptor, encoder, encrypted_matrix);
 
     //Calculating accuracy - This is where the comparison operator making the decision is
     accuracy = get_accuracy(sigmoid_decrypted, y);

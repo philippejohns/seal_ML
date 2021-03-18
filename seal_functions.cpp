@@ -45,40 +45,47 @@ SEAL_encrypt_matrix(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<
     return encrypted_matrix;
 }
 
-vector<Ciphertext> 
+//vector<Ciphertext> 
+void
 SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights)
 {
-    vector<Ciphertext> result;
+    //vector<Ciphertext> result;
     
     for (auto & ct : matrix)
-        result.push_back(SEAL_dot_product(evalr, gal_keys, ct, weights));
+        //result.push_back(SEAL_dot_product(evalr, gal_keys, ct, weights));
+        SEAL_dot_product(evalr, gal_keys, ct, weights);
 
-    return result;
+    //return result;
 }
 
-Ciphertext
+//Ciphertext
+void
 SEAL_dot_product(Evaluator & evalr, GaloisKeys & gal_keys, Ciphertext & ct, Plaintext & pt)
 {
-    Ciphertext result_entry;
+    //Ciphertext result_entry;
 
     //element-wise multiplication between ct and pt
-    evalr.multiply_plain(ct, pt, result_entry); 
+    //evalr.multiply_plain(ct, pt, result_entry);
+    evalr.multiply_plain_inplace(ct, pt); 
 
     //sums up elements of each vector batched in ct*pt
     Ciphertext rotated;
     for (size_t i = NR_COLS / 2; i > 0; i /= 2)
     {
-        evalr.rotate_vector(result_entry, i, gal_keys, rotated);
-        evalr.add_inplace(result_entry, rotated);
+        //evalr.rotate_vector(result_entry, i, gal_keys, rotated);
+        //evalr.add_inplace(result_entry, rotated);
+        evalr.rotate_vector(ct, i, gal_keys, rotated);
+        evalr.add_inplace(ct, rotated);
     }
 
-    return result_entry; 
+    //return result_entry; 
 }
 
-vector<Ciphertext> 
+//vector<Ciphertext>
+void
 SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys)
 {
-    vector<Ciphertext> result;
+    //vector<Ciphertext> result;
     Plaintext plain_coeff3, plain_coeff1, plain_scale_down;
     encoder.encode(COEFF1, CT_SCALE, plain_coeff1);
     encoder.encode(COEFF3, CT_SCALE, plain_coeff3);
@@ -123,10 +130,11 @@ SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec,
         x3.scale() = 1.20895e+24;
 
         evalr.add_inplace(x3, x_scaled_coeff1); //x3 now has the whole polynomial
-        result.push_back(x3);
+        //result.push_back(x3);
+        x = x3;
     }
 
-    return result;
+    //return result;
 }
 
 vector<double> 
@@ -142,12 +150,9 @@ SEAL_decrypt_result(Decryptor & decryptor, CKKSEncoder & encoder, vector<Ciphert
         decryptor.decrypt(ct, pt);
         encoder.decode(pt, batched_results);
         
-        if (&ct == &encrypted_result.back()) //this seems like it may be a bad idea 
-        {
-             nr_entries = NR_ROWS % (NR_SLOTS / NR_COLS);  //maybe switch back to iterators
-             if(nr_entries == 0)
-                nr_entries = (NR_SLOTS / NR_COLS); 
-        }  
+        if (&ct == &encrypted_result.back())                //this seems like it may be a bad idea 
+            nr_entries = NR_ROWS % (NR_SLOTS / NR_COLS);    //maybe switch back to iterators
+
         for (size_t i = 0; i < nr_entries; i++)
             result.push_back(batched_results[i*NR_COLS]);
     }
