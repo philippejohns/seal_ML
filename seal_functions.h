@@ -23,7 +23,8 @@ SEAL_encrypt_matrix(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<
 
 //vector<Ciphertext>
 void
-SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights);
+SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights,
+    vector<Ciphertext>::iterator start, vector<Ciphertext>::iterator end);
 
 //Ciphertext
 void
@@ -31,7 +32,8 @@ SEAL_dot_product(Evaluator & evalr, GaloisKeys & gal_keys, Ciphertext & ct, Plai
 
 //vector<Ciphertext> 
 void
-SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys);
+SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys,
+	vector<Ciphertext>::iterator start, vector<Ciphertext>::iterator end);
 
 vector<double> 
 SEAL_decrypt_result(Decryptor & decryptor, CKKSEncoder & encoder, vector<Ciphertext> & encrypted_result);

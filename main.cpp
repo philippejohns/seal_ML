@@ -1,5 +1,6 @@
 #include "main.h"
 #include <thread>
+#include <chrono>
 
 const size_t NR_ROWS = 422; 			//Number of rows in matrix of data
 const size_t NR_COLS = 1024;			//Number of columns in matrix of data
@@ -21,6 +22,9 @@ const string weights_filename = "../medical_weights.csv";
 const string y_filename = "../medical_correct_results.csv";
 
 const double THRESHOLD = 0.5; 	//Sigmoid decision threshold
+
+void thread_func(size_t i, size_t n, Evaluator & evalr, GaloisKeys & gal_keys, 
+    vector<Ciphertext> & matrix, Plaintext & weights, CKKSEncoder & encoder, RelinKeys & r_keys);
 
 int main()
 {	
@@ -69,13 +73,28 @@ int main()
     //Encrypting matrix of data
     vector<Ciphertext> encrypted_matrix = SEAL_encrypt_matrix(encryptor, encoder, data);
 
+
     //Performing algorithm while encrypted with SEAL
+    auto t_start = std::chrono::high_resolution_clock::now();
     c_start = std::clock();	// start time
+    
     //vector<Ciphertext> encrypted_result = SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights);
     //vector<Ciphertext> sigmoid_result = SEAL_sigmoid(evaluator, encoder, encrypted_result, relin_keys);
-    SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights);
-    SEAL_sigmoid(evaluator, encoder, encrypted_matrix, relin_keys);
+    
+    size_t num_threads = 8;
+
+    vector<thread> threads;
+
+    for (size_t i = 0; i < num_threads; i++)
+        threads.push_back(thread(thread_func, i, num_threads, ref(evaluator), ref(gal_keys), 
+            ref(encrypted_matrix), ref(plaintext_weights), ref(encoder), ref(relin_keys)));
+
+    for (auto & th : threads)
+        th.join();
+    
     c_end = clock(); 		//end time
+    auto t_end = std::chrono::high_resolution_clock::now();
+ 
 
     //vector<double> sigmoid_decrypted = SEAL_decrypt_result(decryptor, encoder, sigmoid_result);
     vector<double> sigmoid_decrypted = SEAL_decrypt_result(decryptor, encoder, encrypted_matrix);
@@ -85,8 +104,20 @@ int main()
 
     //Printing results
  	time_elapsed_ms = 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC;
+    auto wallclock_time = std::chrono::duration<double, std::milli>(t_end-t_start).count();
 	cout << "SEAL CPU time used: " << time_elapsed_ms << " ms" << endl;
+    cout << "Wall clock time passed: " << wallclock_time << " ms" << endl;
 	cout << "SEAL accuracy (3rd degree polynomial approx.): "<< accuracy << endl;
 
 	return 0;
+}
+
+void thread_func(size_t i, size_t n, Evaluator & evalr, GaloisKeys & gal_keys, 
+    vector<Ciphertext> & matrix, Plaintext & weights, CKKSEncoder & encoder, RelinKeys & r_keys)
+{
+    auto start = matrix.begin() + (i * matrix.size()/n);
+    auto end = matrix.begin() + ((i + 1) * matrix.size()/n);
+
+    SEAL_matrix_multiply(evalr, gal_keys, matrix, weights, start, end);
+    SEAL_sigmoid(evalr, encoder, matrix, r_keys, start, end);
 }

@@ -47,13 +47,15 @@ SEAL_encrypt_matrix(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<
 
 //vector<Ciphertext> 
 void
-SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights)
+SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights,
+    vector<Ciphertext>::iterator start, vector<Ciphertext>::iterator end)
 {
     //vector<Ciphertext> result;
     
-    for (auto & ct : matrix)
+    //for (auto & ct : matrix)
+    for (auto it = start; it != end; it++)
         //result.push_back(SEAL_dot_product(evalr, gal_keys, ct, weights));
-        SEAL_dot_product(evalr, gal_keys, ct, weights);
+        SEAL_dot_product(evalr, gal_keys, *it, weights);
 
     //return result;
 }
@@ -83,7 +85,8 @@ SEAL_dot_product(Evaluator & evalr, GaloisKeys & gal_keys, Ciphertext & ct, Plai
 
 //vector<Ciphertext>
 void
-SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys)
+SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys, 
+    vector<Ciphertext>::iterator start, vector<Ciphertext>::iterator end)
 {
     //vector<Ciphertext> result;
     Plaintext plain_coeff3, plain_coeff1, plain_scale_down;
@@ -91,16 +94,20 @@ SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec,
     encoder.encode(COEFF3, CT_SCALE, plain_coeff3);
     encoder.encode(COEFF_XSCALE, CT_SCALE, plain_scale_down);
     
-    for (auto & x : vec) //need better names...
+    //for (auto & x : vec) //need better names...
+    for (auto it = start; it != end; it++)
     { 
         Ciphertext x_scaled, x_scaled_coeff3, x_scaled_coeff1, x3;
 
         //x was not rescaled after a single multiplication in the matrix multiply
-        evalr.rescale_to_next_inplace(x);
-        evalr.mod_switch_to_inplace(plain_scale_down, x.parms_id());
+        //evalr.rescale_to_next_inplace(x);
+        //evalr.mod_switch_to_inplace(plain_scale_down, x.parms_id());
+        evalr.rescale_to_next_inplace(*it);
+        evalr.mod_switch_to_inplace(plain_scale_down, (*it).parms_id());
 
         //scaling down x (the actual number, not the ciphertext)
-        evalr.multiply_plain(x, plain_scale_down, x_scaled);
+        //evalr.multiply_plain(x, plain_scale_down, x_scaled);
+        evalr.multiply_plain(*it, plain_scale_down, x_scaled);
         evalr.rescale_to_next_inplace(x_scaled);
 
         //to calculated x^3, square x first
@@ -131,7 +138,7 @@ SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec,
 
         evalr.add_inplace(x3, x_scaled_coeff1); //x3 now has the whole polynomial
         //result.push_back(x3);
-        x = x3;
+        *it = x3;
     }
 
     //return result;
