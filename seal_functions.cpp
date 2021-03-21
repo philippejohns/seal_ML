@@ -45,56 +45,37 @@ SEAL_encrypt_matrix(Encryptor & encryptor, CKKSEncoder & encoder, vector<vector<
     return encrypted_matrix;
 }
 
-//vector<Ciphertext> 
 void
 SEAL_matrix_multiply(Evaluator & evalr, GaloisKeys & gal_keys, vector<Ciphertext> & matrix, Plaintext & weights,
     vector<Ciphertext>::iterator start, vector<Ciphertext>::iterator end)
 {
-    //vector<Ciphertext> result;
-    
-    //for (auto & ct : matrix)
     for (auto it = start; it != end; it++)
-        //result.push_back(SEAL_dot_product(evalr, gal_keys, ct, weights));
         SEAL_dot_product(evalr, gal_keys, *it, weights);
-
-    //return result;
 }
 
-//Ciphertext
 void
 SEAL_dot_product(Evaluator & evalr, GaloisKeys & gal_keys, Ciphertext & ct, Plaintext & pt)
 {
-    //Ciphertext result_entry;
-
-    //element-wise multiplication between ct and pt
-    //evalr.multiply_plain(ct, pt, result_entry);
     evalr.multiply_plain_inplace(ct, pt); 
 
     //sums up elements of each vector batched in ct*pt
     Ciphertext rotated;
     for (size_t i = NR_COLS / 2; i > 0; i /= 2)
     {
-        //evalr.rotate_vector(result_entry, i, gal_keys, rotated);
-        //evalr.add_inplace(result_entry, rotated);
         evalr.rotate_vector(ct, i, gal_keys, rotated);
         evalr.add_inplace(ct, rotated);
     }
-
-    //return result_entry; 
 }
 
-//vector<Ciphertext>
 void
 SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec, RelinKeys & r_keys, 
     vector<Ciphertext>::iterator start, vector<Ciphertext>::iterator end)
 {
-    //vector<Ciphertext> result;
     Plaintext plain_coeff3, plain_coeff1, plain_scale_down;
     encoder.encode(COEFF1, CT_SCALE, plain_coeff1);
     encoder.encode(COEFF3, CT_SCALE, plain_coeff3);
     encoder.encode(COEFF_XSCALE, CT_SCALE, plain_scale_down);
     
-    //for (auto & x : vec) //need better names...
     for (auto it = start; it != end; it++)
     { 
         Ciphertext x_scaled, x_scaled_coeff3, x_scaled_coeff1, x3;
@@ -137,7 +118,6 @@ SEAL_sigmoid(Evaluator & evalr, CKKSEncoder & encoder, vector<Ciphertext> & vec,
         x3.scale() = 1.20895e+24;
 
         evalr.add_inplace(x3, x_scaled_coeff1); //x3 now has the whole polynomial
-        //result.push_back(x3);
         *it = x3;
     }
 

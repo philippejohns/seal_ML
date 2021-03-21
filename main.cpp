@@ -1,6 +1,6 @@
 #include "main.h"
-#include <thread>
-#include <chrono>
+
+const size_t NUM_THREADS = 4;           //Number of threads, including the main one
 
 const size_t NR_ROWS = 422; 			//Number of rows in matrix of data
 const size_t NR_COLS = 1024;			//Number of columns in matrix of data
@@ -73,21 +73,26 @@ int main()
     //Encrypting matrix of data
     vector<Ciphertext> encrypted_matrix = SEAL_encrypt_matrix(encryptor, encoder, data);
 
-
     //Performing algorithm while encrypted with SEAL
     auto t_start = std::chrono::high_resolution_clock::now();
     c_start = std::clock();	// start time
-    
-    //vector<Ciphertext> encrypted_result = SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights);
-    //vector<Ciphertext> sigmoid_result = SEAL_sigmoid(evaluator, encoder, encrypted_result, relin_keys);
-    
-    size_t num_threads = 8;
 
     vector<thread> threads;
 
-    for (size_t i = 0; i < num_threads; i++)
-        threads.push_back(thread(thread_func, i, num_threads, ref(evaluator), ref(gal_keys), 
-            ref(encrypted_matrix), ref(plaintext_weights), ref(encoder), ref(relin_keys)));
+    for (size_t i = 1; i < NUM_THREADS; i++)
+        threads.push_back(thread([&, i] {
+            auto start = encrypted_matrix.begin() + (i * encrypted_matrix.size()/NUM_THREADS);
+            auto end = encrypted_matrix.begin() + ((i + 1) * encrypted_matrix.size()/NUM_THREADS);
+
+            SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights, start, end);
+            SEAL_sigmoid(evaluator, encoder, encrypted_matrix, relin_keys, start, end);
+        }));
+
+    auto start = encrypted_matrix.begin();
+    auto end = start + encrypted_matrix.size()/NUM_THREADS;
+
+    SEAL_matrix_multiply(evaluator, gal_keys, encrypted_matrix, plaintext_weights, start, end);
+    SEAL_sigmoid(evaluator, encoder, encrypted_matrix, relin_keys, start, end);
 
     for (auto & th : threads)
         th.join();
@@ -110,14 +115,4 @@ int main()
 	cout << "SEAL accuracy (3rd degree polynomial approx.): "<< accuracy << endl;
 
 	return 0;
-}
-
-void thread_func(size_t i, size_t n, Evaluator & evalr, GaloisKeys & gal_keys, 
-    vector<Ciphertext> & matrix, Plaintext & weights, CKKSEncoder & encoder, RelinKeys & r_keys)
-{
-    auto start = matrix.begin() + (i * matrix.size()/n);
-    auto end = matrix.begin() + ((i + 1) * matrix.size()/n);
-
-    SEAL_matrix_multiply(evalr, gal_keys, matrix, weights, start, end);
-    SEAL_sigmoid(evalr, encoder, matrix, r_keys, start, end);
 }
